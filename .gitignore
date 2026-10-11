@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+.ipynb_checkpoints/
+
+# dataset is downloaded by src/dataset.py, not committed
+data/input.txt
+
+# checkpoints are shared via GitHub Release / Drive, not committed
+checkpoints/*.pt
