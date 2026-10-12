@@ -7,6 +7,7 @@ Notation used in every shape comment:
 import math
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 
@@ -43,3 +44,43 @@ def scaled_dot_product_attention(q, k, v, mask=None):
 
     # (..., T, T) @ (..., T, d_k) -> (..., T, d_k)   weighted average of values
     return weights @ v, weights
+
+
+class MultiHeadAttention(nn.Module):
+    """H attention heads run in parallel, then concatenated and projected."""
+
+    def __init__(self, d_model, n_heads, dropout=0.0):
+        super().__init__()
+        assert d_model % n_heads == 0, "d_model must be divisible by n_heads"
+        self.n_heads = n_heads
+        self.d_k = d_model // n_heads
+        self.w_q = nn.Linear(d_model, d_model)
+        self.w_k = nn.Linear(d_model, d_model)
+        self.w_v = nn.Linear(d_model, d_model)
+        self.w_o = nn.Linear(d_model, d_model)  # final projection after concatenation
+        self.dropout = nn.Dropout(dropout)
+        self.last_attn = None  # (B, H, T, T) weights, kept for visualization
+
+    def split_heads(self, x):
+        """(B, T, D) -> (B, H, T, d_k)"""
+        B, T, _ = x.shape
+        x = x.view(B, T, self.n_heads, self.d_k)  # cut D into H pieces of d_k
+        return x.transpose(1, 2)                  # move heads next to batch
+
+    def merge_heads(self, x):
+        """(B, H, T, d_k) -> (B, T, D)   (this is the concatenation)"""
+        B, _, T, _ = x.shape
+        x = x.transpose(1, 2).contiguous()        # (B, T, H, d_k)
+        return x.view(B, T, self.n_heads * self.d_k)
+
+    def forward(self, x, mask=None):
+        """x: (B, T, D), mask: (T, T) bool or None -> (B, T, D)"""
+        q = self.split_heads(self.w_q(x))  # (B, H, T, d_k)
+        k = self.split_heads(self.w_k(x))
+        v = self.split_heads(self.w_v(x))
+
+        out, weights = scaled_dot_product_attention(q, k, v, mask)  # each head separately
+        self.last_attn = weights.detach()
+
+        out = self.merge_heads(out)        # (B, T, D)
+        return self.dropout(self.w_o(out))  # (B, T, D)
