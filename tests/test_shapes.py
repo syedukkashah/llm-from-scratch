@@ -2,6 +2,7 @@ import pytest
 import torch
 
 from src.attention import MultiHeadAttention, causal_mask
+from src.positional_encoding import SinusoidalPositionalEncoding
 
 
 def test_split_and_merge_shapes():
@@ -37,3 +38,18 @@ def test_mha_is_causal_in_every_head():
     mha(x, causal_mask(8))
     future = torch.triu(torch.ones(8, 8, dtype=torch.bool), diagonal=1)
     assert (mha.last_attn[:, :, future] == 0).all()
+
+
+def test_positional_encoding_shape_and_first_row():
+    pe = SinusoidalPositionalEncoding(d_model=16, max_len=50)
+    out = pe(torch.zeros(2, 10, 16))
+    assert out.shape == (2, 10, 16)
+    # position 0: sin(0)=0 in even dims, cos(0)=1 in odd dims
+    assert torch.allclose(out[0, 0, 0::2], torch.zeros(8))
+    assert torch.allclose(out[0, 0, 1::2], torch.ones(8))
+
+
+def test_positional_encoding_differs_by_position_and_is_bounded():
+    pe = SinusoidalPositionalEncoding(d_model=16, max_len=50).pe
+    assert pe.abs().max() <= 1.0
+    assert not torch.allclose(pe[3], pe[4])  # every position has its own vector
