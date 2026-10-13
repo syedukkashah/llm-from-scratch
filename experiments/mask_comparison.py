@@ -14,34 +14,15 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 from src.attention import causal_mask
-from src.positional_encoding import SinusoidalPositionalEncoding
-from src.transformer_block import TransformerBlock
+from src.gpt import GPT
 
 
-class TinyLM(nn.Module):
-    """Small stack of blocks. causal=False removes the mask (BERT-like attention)."""
-
-    def __init__(self, vocab, d_model=64, n_heads=4, n_layers=2, causal=True):
-        super().__init__()
-        self.causal = causal
-        self.embed = nn.Embedding(vocab, d_model)
-        self.pos = SinusoidalPositionalEncoding(d_model)
-        self.blocks = nn.ModuleList(
-            [TransformerBlock(d_model, n_heads, 4 * d_model) for _ in range(n_layers)])
-        self.ln_f = nn.LayerNorm(d_model)
-        self.head = nn.Linear(d_model, vocab)
-
-    def forward(self, idx):
-        """idx: (B, T) token ids -> logits (B, T, vocab)"""
-        mask = causal_mask(idx.size(1)) if self.causal else None
-        x = self.pos(self.embed(idx))
-        for block in self.blocks:
-            x = block(x, mask)
-        return self.head(self.ln_f(x))
+def make_model(vocab, causal, d_model=64, n_layers=2, context_length=16):
+    """The real GPT class; causal=False removes the mask (BERT-like attention)."""
+    return GPT(vocab, context_length, d_model, n_heads=4, n_layers=n_layers,
+               ffn_dim=4 * d_model, causal=causal)
 
 
 # ---- (a) the two masks -------------------------------------------------------
@@ -79,9 +60,11 @@ def leakage_test():
     changed[0, t + 1] = (idx[0, t + 1] + 1) % vocab  # edit the token AFTER position t
     print(f"\nChange token {t + 1}; how much do the logits at position {t} move?")
     for causal in (True, False):
-        model = TinyLM(vocab, causal=causal).eval()
+        model = make_model(vocab, causal).eval()
         with torch.no_grad():
-            diff = (model(idx)[0, t] - model(changed)[0, t]).abs().max().item()
+            before, _ = model(idx)
+            after, _ = model(changed)
+        diff = (before[0, t] - after[0, t]).abs().max().item()
         name = "causal (GPT)      " if causal else "bidirectional(BERT)"
         print(f"  {name}: max logit change = {diff:.6f}")
 
@@ -92,13 +75,13 @@ def cheating_experiment(steps=1500, vocab=16, T=16, batch=64):
     results = {}
     for causal in (True, False):
         torch.manual_seed(0)
-        model = TinyLM(vocab, d_model=64, n_layers=2, causal=causal)
+        model = make_model(vocab, causal)
         opt = torch.optim.AdamW(model.parameters(), lr=2e-3)
         curve = []
         for step in range(steps):
             seq = torch.randint(0, vocab, (batch, T + 1))
             x, y = seq[:, :-1], seq[:, 1:]  # y[t] is the token right after x[t]
-            loss = F.cross_entropy(model(x).reshape(-1, vocab), y.reshape(-1))
+            _, loss = model(x, y)
             opt.zero_grad()
             loss.backward()
             opt.step()
