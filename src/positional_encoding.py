@@ -27,3 +27,16 @@ class SinusoidalPositionalEncoding(nn.Module):
         """x: (B, T, D) token embeddings -> same shape with position added."""
         T = x.size(1)
         return x + self.pe[:T]  # (T, D) broadcasts over the batch
+
+
+class LearnedPositionalEncoding(nn.Module):
+    """One trainable vector per position (used for the optional position ablation)."""
+
+    def __init__(self, d_model, max_len=512):
+        super().__init__()
+        self.embed = nn.Embedding(max_len, d_model)
+
+    def forward(self, x):
+        """x: (B, T, D) -> same shape with the learned position vectors added."""
+        positions = torch.arange(x.size(1), device=x.device)  # (T,)
+        return x + self.embed(positions)                      # (T, D) broadcasts over batch

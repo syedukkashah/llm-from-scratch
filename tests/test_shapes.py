@@ -1,8 +1,8 @@
-import pytest
+﻿import pytest
 import torch
 
 from src.attention import MultiHeadAttention, causal_mask
-from src.positional_encoding import SinusoidalPositionalEncoding
+from src.positional_encoding import LearnedPositionalEncoding, SinusoidalPositionalEncoding
 from src.transformer_block import FeedForward, TransformerBlock
 
 
@@ -75,3 +75,9 @@ def test_block_is_identity_when_sublayers_output_zero():
         torch.nn.init.zeros_(layer.bias)
     x = torch.randn(2, 10, 32)
     assert torch.allclose(block(x, causal_mask(10)), x)
+
+
+def test_learned_positional_encoding_shape_and_parameters():
+    pe = LearnedPositionalEncoding(d_model=16, max_len=50)
+    assert pe(torch.zeros(2, 10, 16)).shape == (2, 10, 16)
+    assert sum(p.numel() for p in pe.parameters()) == 50 * 16  # one trainable vector per position
