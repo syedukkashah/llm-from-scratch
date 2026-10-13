@@ -1,0 +1,32 @@
+# MiniGPT configuration. Every key can be overridden on the command line,
+# e.g.  python -m src.train --n_layers 6 --max_steps 2000
+
+# data
+data_path: data/input.txt
+train_frac: 0.9
+
+# model
+context_length: 128
+d_model: 256
+n_heads: 4
+n_layers: 4
+ffn_dim: 1024        # 4 * d_model
+dropout: 0.1
+tie_weights: false
+
+# training
+batch_size: 64
+max_steps: 5000
+lr: 0.001            # peak learning rate (after warm-up)
+min_lr: 0.0001       # where the cosine decay ends
+warmup_steps: 100
+weight_decay: 0.01
+grad_clip: 1.0
+seed: 1337
+
+# evaluation / logging
+eval_interval: 250
+eval_iters: 50       # batches averaged per evaluation (same batches every time)
+sample_prompt: "\n"
+sample_tokens: 200
+temperature: 0.8
