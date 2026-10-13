@@ -1,0 +1,6 @@
+# Only what src/api.py needs. PyTorch is installed separately (CPU build, see render.yaml).
+numpy>=1.26
+PyYAML>=6.0
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2.0

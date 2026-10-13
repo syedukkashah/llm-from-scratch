@@ -1,0 +1,13 @@
+# Render blueprint: https://render.com/docs/blueprint-spec
+# The model file is downloaded from the GitHub Release at startup (see src/utils.py).
+services:
+  - type: web
+    name: llm-from-scratch
+    runtime: python
+    plan: free
+    buildCommand: pip install torch --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements-api.txt
+    startCommand: uvicorn src.api:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.6
