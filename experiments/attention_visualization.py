@@ -11,7 +11,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import torch
 
-from src.utils import get_device, load_checkpoint
+from src.utils import ensure_checkpoint, get_device, load_checkpoint
 
 PROMPT = "ROMEO:\nO, wherefore art thou"
 
@@ -66,6 +66,7 @@ def main():
     p.add_argument("--out", default="outputs/figures/fig7_attention.png")
     args = p.parse_args()
 
+    ensure_checkpoint(args.checkpoint)
     model, tokenizer, _ = load_checkpoint(args.checkpoint, get_device())
     maps = get_attention(model, tokenizer, args.prompt)
     labels = [pretty(c) for c in args.prompt]

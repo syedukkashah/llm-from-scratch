@@ -17,7 +17,7 @@ import torch
 
 from src.dataset import load_text, split_data
 from src.generate import generate_text
-from src.utils import get_device, load_checkpoint, set_seed
+from src.utils import ensure_checkpoint, get_device, load_checkpoint, set_seed
 
 # Fixed prompts, same for every evaluation, so samples are comparable.
 PROMPTS = ["ROMEO:", "To be, or not to be", "KING HENRY:\n", "First Citizen:\n", "O, my love"]
@@ -82,6 +82,7 @@ def main():
     args = p.parse_args()
 
     device = get_device()
+    ensure_checkpoint(args.checkpoint)
     model, tokenizer, cfg = load_checkpoint(args.checkpoint, device)
     text = load_text(cfg["data_path"])
     data = torch.tensor(tokenizer.encode(text), dtype=torch.long)

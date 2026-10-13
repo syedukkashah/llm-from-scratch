@@ -2,7 +2,7 @@ import torch
 
 from src.gpt import build_model
 from src.tokenizer import CharTokenizer
-from src.utils import load_checkpoint, save_checkpoint
+from src.utils import ensure_checkpoint, load_checkpoint, save_checkpoint
 
 CFG = dict(context_length=16, d_model=32, n_heads=4, n_layers=2, ffn_dim=128,
            dropout=0.0, tie_weights=False)
@@ -26,3 +26,14 @@ def test_reloaded_model_can_generate(tmp_path):
     loaded, tok2, _ = load_checkpoint(tmp_path / "m.pt")
     out = loaded.generate(torch.tensor([tok2.encode("he")]), max_new_tokens=5, temperature=0.8)
     assert len(tok2.decode(out[0].tolist())) == 7
+
+
+def test_ensure_checkpoint_downloads_only_when_missing(tmp_path):
+    source = tmp_path / "remote.pt"
+    source.write_bytes(b"model-bytes")
+    dest = tmp_path / "sub" / "m.pt"
+    ensure_checkpoint(dest, url=source.as_uri())  # file:// URL, no network needed
+    assert dest.read_bytes() == b"model-bytes"
+    source.write_bytes(b"changed")
+    ensure_checkpoint(dest, url=source.as_uri())   # already there -> not downloaded again
+    assert dest.read_bytes() == b"model-bytes"

@@ -7,7 +7,7 @@ import sys
 
 import torch
 
-from src.utils import get_device, load_checkpoint, set_seed
+from src.utils import ensure_checkpoint, get_device, load_checkpoint, set_seed
 
 
 def generate_text(model, tokenizer, prompt, max_new_tokens=80, temperature=0.8, top_k=None):
@@ -30,6 +30,7 @@ def main():
 
     if args.seed is not None:
         set_seed(args.seed)
+    ensure_checkpoint(args.checkpoint)  # downloads the released model on first use
     model, tokenizer, cfg = load_checkpoint(args.checkpoint, get_device())
     try:
         text = generate_text(model, tokenizer, args.prompt, args.max_new_tokens,
