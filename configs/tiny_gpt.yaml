@@ -13,6 +13,7 @@ n_layers: 4
 ffn_dim: 1024        # 4 * d_model
 dropout: 0.1
 tie_weights: false
+position: sinusoidal  # or "learned"
 
 # training
 batch_size: 64

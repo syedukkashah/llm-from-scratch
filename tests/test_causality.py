@@ -70,3 +70,15 @@ def test_top_k_one_is_greedy():
     greedy = model.generate(start, 10, temperature=0)
     top1 = model.generate(start, 10, temperature=1.0, top_k=1)
     assert torch.equal(greedy, top1)
+
+
+def test_learned_positions_are_causal_and_add_parameters():
+    sinus, learned = make_model(), make_model(position="learned")
+    assert learned.count_parameters() == sinus.count_parameters() + 16 * 32  # context 16 x d_model 32
+    idx = torch.randint(0, 20, (1, 12))
+    changed = idx.clone()
+    changed[0, 7:] = (changed[0, 7:] + 1) % 20
+    with torch.no_grad():
+        a, _ = learned(idx)
+        b, _ = learned(changed)
+    assert torch.allclose(a[:, :7], b[:, :7], atol=1e-6)

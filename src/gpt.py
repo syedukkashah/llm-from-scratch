@@ -4,18 +4,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from src.attention import causal_mask
-from src.positional_encoding import SinusoidalPositionalEncoding
+from src.positional_encoding import LearnedPositionalEncoding, SinusoidalPositionalEncoding
 from src.transformer_block import TransformerBlock
 
 
 class GPT(nn.Module):
     def __init__(self, vocab_size, context_length, d_model, n_heads, n_layers,
-                 ffn_dim, dropout=0.0, causal=True, tie_weights=False):
+                 ffn_dim, dropout=0.0, causal=True, tie_weights=False, position="sinusoidal"):
         super().__init__()
         self.context_length = context_length
         self.causal = causal  # False = no mask (BERT-like attention), only for experiments
         self.embed = nn.Embedding(vocab_size, d_model)             # token id -> vector
-        self.pos = SinusoidalPositionalEncoding(d_model, context_length)
+        assert position in ("sinusoidal", "learned"), "position must be 'sinusoidal' or 'learned'"
+        pos_class = SinusoidalPositionalEncoding if position == "sinusoidal" else LearnedPositionalEncoding
+        self.pos = pos_class(d_model, context_length)
         self.drop = nn.Dropout(dropout)
         self.blocks = nn.ModuleList(
             [TransformerBlock(d_model, n_heads, ffn_dim, dropout) for _ in range(n_layers)])
@@ -81,4 +83,5 @@ def build_model(cfg, vocab_size):
         ffn_dim=cfg["ffn_dim"],
         dropout=cfg["dropout"],
         tie_weights=cfg.get("tie_weights", False),
+        position=cfg.get("position", "sinusoidal"),  # old checkpoints have no such key
     )

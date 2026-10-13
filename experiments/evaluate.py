@@ -50,7 +50,8 @@ def model_summary(model):
     for name, module in groups:
         lines.append(f"{name:<28}{sum(p.numel() for p in module.parameters()):>12,}")
     lines += ["-" * 40, f"{'total':<28}{model.count_parameters():>12,}",
-              f"(sinusoidal position table: {tuple(model.pos.pe.shape)}, a buffer, not trained)"]
+              ("(sinusoidal position table: %s, a buffer, not trained)" % (tuple(model.pos.pe.shape),))
+              if hasattr(model.pos, "pe") else "(learned position embedding is included in the total)"]
     return "\n".join(lines)
 
 
