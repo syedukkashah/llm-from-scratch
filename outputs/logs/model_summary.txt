@@ -1,0 +1,12 @@
+component                     parameters
+----------------------------------------
+token embedding                   16,640
+block 0 (attn+ffn+2 LN)          789,760
+block 1 (attn+ffn+2 LN)          789,760
+block 2 (attn+ffn+2 LN)          789,760
+block 3 (attn+ffn+2 LN)          789,760
+final LayerNorm                      512
+lm_head                           16,705
+----------------------------------------
+total                          3,192,897
+(sinusoidal position table: (128, 256), a buffer, not trained)
