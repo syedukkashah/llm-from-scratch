@@ -10,3 +10,6 @@ data/input.txt
 
 # checkpoints are shared via GitHub Release / Drive, not committed
 checkpoints/*.pt
+
+# per-run ablation sample text
+outputs/logs/ablation/*_samples.txt
