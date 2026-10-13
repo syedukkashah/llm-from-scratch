@@ -3,6 +3,7 @@ import torch
 
 from src.attention import MultiHeadAttention, causal_mask
 from src.positional_encoding import SinusoidalPositionalEncoding
+from src.transformer_block import FeedForward, TransformerBlock
 
 
 def test_split_and_merge_shapes():
@@ -53,3 +54,24 @@ def test_positional_encoding_differs_by_position_and_is_bounded():
     pe = SinusoidalPositionalEncoding(d_model=16, max_len=50).pe
     assert pe.abs().max() <= 1.0
     assert not torch.allclose(pe[3], pe[4])  # every position has its own vector
+
+
+def test_feed_forward_shape_and_hidden_size():
+    ffn = FeedForward(d_model=32, ffn_dim=128)
+    assert ffn.net[0].out_features == 128  # expands to ffn_dim
+    assert ffn(torch.randn(2, 10, 32)).shape == (2, 10, 32)
+
+
+def test_block_keeps_shape():
+    block = TransformerBlock(d_model=32, n_heads=4, ffn_dim=128)
+    assert block(torch.randn(2, 10, 32), causal_mask(10)).shape == (2, 10, 32)
+
+
+def test_block_is_identity_when_sublayers_output_zero():
+    # Residual paths: if attention and FFN add nothing, the block returns x unchanged.
+    block = TransformerBlock(d_model=32, n_heads=4, ffn_dim=128).eval()
+    for layer in (block.attn.w_o, block.ffn.net[2]):
+        torch.nn.init.zeros_(layer.weight)
+        torch.nn.init.zeros_(layer.bias)
+    x = torch.randn(2, 10, 32)
+    assert torch.allclose(block(x, causal_mask(10)), x)

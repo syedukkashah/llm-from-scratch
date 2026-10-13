@@ -2,6 +2,7 @@ import torch
 
 from experiments.hand_calculation import K, Q, V, compute
 from src.attention import causal_mask, scaled_dot_product_attention
+from src.transformer_block import TransformerBlock
 
 
 def test_causal_mask_is_lower_triangular():
@@ -40,3 +41,12 @@ def test_changing_a_future_value_does_not_change_earlier_outputs():
     v2[:, 4] += 10.0  # edit only the last token's value
     out_after, _ = scaled_dot_product_attention(q, k, v2, mask)
     assert torch.allclose(out_before[:, :4], out_after[:, :4])  # earlier positions unaffected
+
+
+def test_block_output_ignores_future_inputs():
+    block = TransformerBlock(d_model=16, n_heads=4, ffn_dim=64).eval()
+    x = torch.randn(1, 6, 16)
+    x2 = x.clone()
+    x2[:, 4:] += 5.0  # change tokens 4 and 5
+    mask = causal_mask(6)
+    assert torch.allclose(block(x, mask)[:, :4], block(x2, mask)[:, :4], atol=1e-6)
