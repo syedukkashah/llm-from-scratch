@@ -1,14 +1,13 @@
 """Hugging Face Space entry point (Gradio SDK).
 
-Serves the FastAPI service from src/api.py (GET /health, POST /generate, /docs) and a small
-Gradio page at "/" that calls the same generate function.
+Gradio serves a small web page at "/" and the FastAPI service from src/api.py is mounted
+under /api:  GET /api/health, POST /api/generate, docs at /api/docs.
 """
 import gradio as gr
-import uvicorn
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from src.api import GenerateRequest, app, generate
+from src.api import GenerateRequest, app as api_app, generate, load_model
 
 
 # ZeroGPU hardware refuses to start an app without a @spaces.GPU function.
@@ -48,15 +47,15 @@ demo = gr.Interface(
     outputs=gr.Textbox(label="Generated text", lines=12),
     title="llm-from-scratch: a GPT built from scratch",
     description="3.2M-parameter character-level model trained on Tiny Shakespeare. "
-                "The text is an experiment and not meaningful. REST API docs: /docs",
+                "The text is an experiment and not meaningful. REST API docs: /api/docs",
     flagging_mode="never",
 )
 
-# The Gradio page takes over "/", so drop the JSON route that src/api.py defines there
-app.router.routes = [r for r in app.router.routes if getattr(r, "path", None) != "/"]
-# ssr_mode=False: Spaces turn on server-side rendering, which starts a Node server on port 7860
-# and would block uvicorn from using it
-app = gr.mount_gradio_app(app, demo, path="/", ssr_mode=False)
+load_model()   # the mounted API does not run its startup code, so load the model here
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+# launch() must be called: on ZeroGPU it reports the @spaces.GPU function to Hugging Face.
+# ssr_mode=False: Spaces turn on server-side rendering, which would start a Node server.
+fastapi_app, _, _ = demo.launch(server_name="0.0.0.0", server_port=7860, ssr_mode=False,
+                                prevent_thread_lock=True)
+fastapi_app.mount("/api", api_app)
+demo.block_thread()

@@ -24,12 +24,16 @@ state = {}                  # holds the loaded model, filled at startup
 lock = threading.Lock()     # one generation at a time (seeding is global in PyTorch)
 
 
-@asynccontextmanager
-async def lifespan(app):
+def load_model():
     path = os.environ.get("CHECKPOINT_PATH", "checkpoints/tiny_gpt.pt")
     ensure_checkpoint(path, os.environ.get("CHECKPOINT_URL"))
     model, tokenizer, cfg = load_checkpoint(path, "cpu")  # loaded once, reused by every request
     state.update(model=model, tokenizer=tokenizer, cfg=cfg)
+
+
+@asynccontextmanager
+async def lifespan(app):
+    load_model()
     yield
     state.clear()
 
