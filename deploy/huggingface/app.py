@@ -11,6 +11,18 @@ from pydantic import ValidationError
 from src.api import GenerateRequest, app, generate
 
 
+# ZeroGPU hardware refuses to start an app without a @spaces.GPU function.
+# The model runs on CPU, so this placeholder is never called.
+try:
+    import spaces
+
+    @spaces.GPU
+    def gpu_placeholder():
+        return 0
+except ImportError:   # CPU hardware or running locally
+    pass
+
+
 def run(prompt, max_new_tokens, temperature, top_k, seed):
     try:
         req = GenerateRequest(prompt=prompt, max_new_tokens=int(max_new_tokens),
