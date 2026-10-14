@@ -8,7 +8,8 @@ Trained on Tiny Shakespeare. Final model: **3.19M parameters, validation loss 1.
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/syedukkashah/llm-from-scratch/blob/main/notebooks/colab_demo.ipynb)
 
-Live API: _not deployed yet, see [Deploy to Render](#deploy-to-render)_
+Live demo and API: https://huggingface.co/spaces/syedukkashah/llm-from-scratch
+(API base URL `https://syedukkashah-llm-from-scratch.hf.space/api`, docs at `/api/docs`; see [Deployment](#deployment))
 
 ## Quick start
 
@@ -173,21 +174,36 @@ curl -X POST localhost:8000/generate -H "Content-Type: application/json" \
      -d '{"prompt": "ROMEO:", "max_new_tokens": 80, "temperature": 0.8, "seed": 1}'
 ```
 
-Endpoints: `GET /health`, `POST /generate`, interactive docs at `/docs`. Limits: prompt up to 500 characters,
+Endpoints: `GET /health`, `POST /generate`, interactive docs at `/docs` (under `/api` on the Hugging Face Space). Limits: prompt up to 500 characters,
 up to 500 new tokens, temperature 0 to 2. A prompt containing a character the tokenizer does not know returns
 HTTP 400 with the list of allowed characters.
 
-## Deploy to Render
+## Deployment
 
-`render.yaml` describes the service (CPU-only PyTorch, `requirements-api.txt`, health check at `/health`).
+The service is deployed as a free [Hugging Face Space](https://huggingface.co/spaces/syedukkashah/llm-from-scratch)
+(no payment details needed). It shows a small web form at `/` and the REST API under `/api`:
 
-1. Push this repository to GitHub.
-2. On [render.com](https://render.com): **New + > Blueprint**, pick this repository, apply.
-3. On first start the service downloads the checkpoint from the GitHub Release (override with the
-   `CHECKPOINT_URL` environment variable).
-4. Test: `curl https://<your-service>.onrender.com/health`.
+```bash
+curl https://syedukkashah-llm-from-scratch.hf.space/api/health
+curl -X POST https://syedukkashah-llm-from-scratch.hf.space/api/generate      -H "Content-Type: application/json"      -d '{"prompt": "ROMEO:", "max_new_tokens": 80, "temperature": 0.8, "seed": 1}'
+```
 
-The free tier sleeps when idle, so the first request after a pause is slow.
+The Space runs the same `src/api.py` as above. The files it needs are in `deploy/huggingface/`:
+
+1. `python deploy/huggingface/make_space.py` builds `deploy/huggingface/space/` (`app.py`, `README.md`,
+   `requirements.txt`, `src/`, `configs/`).
+2. Create a Space with the Gradio SDK and upload the contents of that folder.
+3. On first start the app downloads the checkpoint from the GitHub Release (override with `CHECKPOINT_URL`).
+
+Notes: free Spaces sleep after a period without traffic, so the first request can take a minute. This Space
+was created on ZeroGPU hardware, which requires a `@spaces.GPU` function and a `launch()` call, so `app.py`
+contains a placeholder function; the model itself runs on CPU.
+
+### Alternative: Render
+
+`render.yaml` describes a plain FastAPI service (CPU-only PyTorch, `requirements-api.txt`, health check at
+`/health`). On [render.com](https://render.com): **New + > Blueprint**, pick this repository, apply. It has not
+been tested on Render, and the free tier's 512 MB of memory may be too small for PyTorch.
 
 ## Acceptance checks
 
