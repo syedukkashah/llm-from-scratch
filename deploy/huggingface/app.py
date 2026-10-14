@@ -3,8 +3,6 @@
 Serves the FastAPI service from src/api.py (GET /health, POST /generate, /docs) and a small
 Gradio page at "/" that calls the same generate function.
 """
-import os
-
 import gradio as gr
 import uvicorn
 from fastapi import HTTPException
@@ -56,9 +54,9 @@ demo = gr.Interface(
 
 # The Gradio page takes over "/", so drop the JSON route that src/api.py defines there
 app.router.routes = [r for r in app.router.routes if getattr(r, "path", None) != "/"]
-app = gr.mount_gradio_app(app, demo, path="/")
+# ssr_mode=False: Spaces turn on server-side rendering, which starts a Node server on port 7860
+# and would block uvicorn from using it
+app = gr.mount_gradio_app(app, demo, path="/", ssr_mode=False)
 
 if __name__ == "__main__":
-    # Hugging Face may put its own proxy on 7860 and tell the app which port to use
-    port = int(os.environ.get("GRADIO_SERVER_PORT", 7860))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=7860)
