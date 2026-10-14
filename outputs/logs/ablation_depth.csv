@@ -1,0 +1,4 @@
+factor,value,params,train_loss,val_loss,perplexity,train_time_s,tokens_per_sec,peak_memory_mb
+n_layers,2,1613377,1.3877,1.6221,5.063,69.4,235982,399
+n_layers,4,3192897,1.2907,1.5501,4.712,157.0,104335,714
+n_layers,6,4772417,1.2367,1.5221,4.582,235.9,69466,1028
