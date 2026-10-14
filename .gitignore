@@ -13,3 +13,4 @@ checkpoints/*.pt
 
 # per-run ablation sample text
 outputs/logs/ablation/*_samples.txt
+deploy/huggingface/space/
