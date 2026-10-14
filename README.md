@@ -131,8 +131,38 @@ python -m experiments.mask_comparison    # BERT-style vs GPT-style masks, and wh
 python -m experiments.ablation --experiment all   # depth, heads, context length, position, sampling
 ```
 
-The training ablations (2000 steps each, same seed and data, one factor changed at a time) take a few minutes
-per run on a GPU. Results are written to `outputs/logs/ablation_table.md` and `outputs/figures/ablation_*.png`.
+### Ablation results
+
+Each run trains for 2000 steps with the same seed, data and evaluation batches, changing one factor at a time
+(T4 GPU, about 23 minutes of training for all 8 models). The baseline (4 layers, 4 heads, context 128, sinusoidal) is trained
+once and shared. Full table: `outputs/logs/ablation_table.md`, plots: `outputs/figures/ablation_*.png`.
+
+| Factor | Value | Parameters | Val loss | Perplexity | Train time (s) | Peak memory (MB) |
+|---|---|---|---|---|---|---|
+| layers | 2 | 1.61M | 1.622 | 5.06 | 69 | 399 |
+| layers | **4** | 3.19M | 1.550 | 4.71 | 157 | 714 |
+| layers | 6 | 4.77M | 1.522 | 4.58 | 236 | 1028 |
+| heads | 2 | 3.19M | 1.547 | 4.70 | 152 | 682 |
+| heads | **4** | 3.19M | 1.550 | 4.71 | 157 | 714 |
+| heads | 8 | 3.19M | 1.549 | 4.71 | 173 | 778 |
+| context | 64 | 3.19M | 1.589 | 4.90 | 74 | 368 |
+| context | **128** | 3.19M | 1.550 | 4.71 | 157 | 714 |
+| context | 256 | 3.19M | 1.523 | 4.59 | 349 | 1489 |
+| position | **sinusoidal** | 3.19M | 1.550 | 4.71 | 157 | 714 |
+| position | learned | 3.23M | 1.542 | 4.67 | 158 | 714 |
+
+What the numbers say:
+
+- **Depth** helps, with diminishing returns: 2 to 4 layers gains 0.07 in loss, 4 to 6 gains 0.03, while time and
+  memory grow about linearly (6 layers takes 1.5x as long as 4).
+- **Heads** make no measurable difference (spread 0.003). The parameter count is identical, because the heads
+  split the same `d_model`. More heads only cost a little extra time.
+- **Context** helps too (64 to 128 gains 0.04, 128 to 256 gains 0.03), but the cost is steep: 256 takes 2.2x as
+  long and 2.1x the memory of 128, because attention scales with the square of the context.
+- **Position**: learned is 0.008 better than sinusoidal for 32,768 extra parameters. That gap is within what a
+  single seed can produce, so the fixed sinusoidal encoding is enough here.
+- Every run is a single seed, so differences below about 0.01 to 0.02 are not significant. The depth and context
+  effects are larger than that; the heads and position effects are not.
 
 ## Command-line and API
 
