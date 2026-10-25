@@ -13,6 +13,8 @@ Live demo and API: https://huggingface.co/spaces/syedukkashah/llm-from-scratch
 
 Video Demo: https://drive.google.com/file/d/1_PXEz71RYliBf32n7NPOGZFJIRpjxCJb/view?usp=sharing
 
+Medium Article: https://medium.com/@k230074/building-a-tiny-gpt-from-scratch-on-tiny-shakespeare-0f325680bac6
+
 ## Quick start
 
 ```bash
