@@ -11,6 +11,8 @@ Trained on Tiny Shakespeare. Final model: **3.19M parameters, validation loss 1.
 Live demo and API: https://huggingface.co/spaces/syedukkashah/llm-from-scratch
 (API base URL `https://syedukkashah-llm-from-scratch.hf.space/api`, docs at `/api/docs`; see [Deployment](#deployment))
 
+Video Demo: https://drive.google.com/file/d/1_PXEz71RYliBf32n7NPOGZFJIRpjxCJb/view?usp=sharing
+
 ## Quick start
 
 ```bash
